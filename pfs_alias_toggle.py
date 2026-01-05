@@ -1,5 +1,5 @@
 """
-fw_alias_toggle.py
+pfs_alias_toggle.py
 
 Toggle the current system's IPv4 address in a pfSense firewall alias.
 - Add the current system if the IP is absent from alias,
@@ -16,7 +16,7 @@ import os
 import sys
 import json
 import socket
-from typing import Tuple, List, Dict, Any, Optional
+from typing import Tuple, List, Dict, Any
 import requests
 import urllib3
 
@@ -82,20 +82,11 @@ def toggle_ip(
         pairs = [(a, d) for a, d in zip(addresses, details) if a != ip]
         new_addresses = [a for a, _ in pairs]
         new_details = [d for _, d in pairs]
-        return new_addresses, new_details, f"{YELLOW}removed"
+        return new_addresses, new_details, "removed"
     else:
         addresses.append(ip)
         details.append(f"{hostname} - added by touchdesigner")
-        return addresses, details, f"{GREEN}added"
-
-
-def _getenv_any(*names: str) -> Optional[str]:
-    """Return the first non-empty environment variable among `names`."""
-    for name in names:
-        val = os.getenv(name)
-        if val:
-            return val
-    return None
+        return addresses, details, "added"
 
 
 def main():
@@ -194,7 +185,18 @@ def main():
         )
         sys.exit(8)
 
-    print(f"{GREEN}Success:{RESET} {action} {my_ip} ({hostname}){RESET}")
+    if 'td' in sys.modules:
+        if action.strip().lower() == "added":
+            op('alias_status').par.const0value = 1
+        else:
+            op('alias_status').par.const0value = 0
+        op('alias_action').clear()
+        op('alias_action').write(action + ': ' + my_ip + ' (' + hostname + ')')
+    else:
+        if action == "removed":
+            print(f"{YELLOW}Removed{RESET}: {my_ip} ({hostname})")
+        else:
+            print(f"{GREEN}Added{RESET}: {my_ip} ({hostname})")
 
 
 main()
