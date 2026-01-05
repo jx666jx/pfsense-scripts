@@ -1,8 +1,9 @@
 """
-fw-alias-toggle.py
+fw_alias_toggle.py
 
 Toggle the current system's IPv4 address in a pfSense firewall alias.
-- Add the current system if the IP is absent from alias, else remove the current system if present in alias.
+- Add the current system if the IP is absent from alias,
+  else remove the current system if present in alias.
 - PATCH the updated alias with apply=true.
 
 Required environment variables:
@@ -98,6 +99,7 @@ def _getenv_any(*names: str) -> Optional[str]:
 
 
 def main():
+    """Run the main function."""
     # Read env with flexible names
     pfs_api_key = os.getenv("PFS_API_KEY")
     pfs_alias_id = os.getenv("PFS_ALIAS_ID")
@@ -115,17 +117,24 @@ def main():
         print_error("ERROR: Missing required env var(s): " + ", ".join(missing))
         sys.exit(1)
 
+    # These are guaranteed non-empty at this point.
+    assert pfs_api_key is not None
+    assert pfs_alias_id is not None
+    assert pfs_ip is not None
+
     base_url = f"https://{pfs_ip}/api/v2/firewall/alias"
 
     hostname = socket.gethostname()
     try:
-        my_ip = get_local_ip_towards(pfs_ip, 80)
+        my_ip = get_local_ip_towards(str(pfs_ip), 80)
     except OSError as e:
         print_error(f"ERROR: Could not determine local IP: {e}")
         sys.exit(2)
 
     session = requests.Session()
     session.verify = False  # insecure, equivalent to curl -k
+    # Narrow type for the checker: pfs_api_key is guaranteed non-empty above.
+    assert pfs_api_key is not None
     session.headers.update({"X-API-Key": pfs_api_key})
 
     # GET alias
