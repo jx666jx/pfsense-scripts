@@ -100,10 +100,18 @@ def _getenv_any(*names: str) -> Optional[str]:
 
 def main():
     """Run the main function."""
-    # Read env with flexible names
-    pfs_api_key = os.getenv("PFS_API_KEY")
-    pfs_alias_id = os.getenv("PFS_ALIAS_ID")
-    pfs_ip = os.getenv("PFS_IP")
+    # Read env vars
+    if 'td' in sys.modules:
+        # Running inside TouchDesigner (td module found).
+        pfs_api_key = parent(5).par.Pfsapikey
+        pfs_alias_id = parent(5).par.Pfsaliasid
+        pfs_ip = parent(5).par.Pfsip
+    else:
+        # Not running inside TouchDesigner (td module not found).
+        pfs_api_key = os.getenv("PFS_API_KEY")
+        pfs_alias_id = os.getenv("PFS_ALIAS_ID")
+        pfs_ip = os.getenv("PFS_IP")
+
 
     # Validate required env
     missing = []
@@ -133,9 +141,7 @@ def main():
 
     session = requests.Session()
     session.verify = False  # insecure, equivalent to curl -k
-    # Narrow type for the checker: pfs_api_key is guaranteed non-empty above.
-    assert pfs_api_key is not None
-    session.headers.update({"X-API-Key": pfs_api_key})
+    session.headers.update({"X-API-Key": str(pfs_api_key)})
 
     # GET alias
     try:
@@ -191,5 +197,4 @@ def main():
     print(f"{GREEN}Success:{RESET} {action} {my_ip} ({hostname}){RESET}")
 
 
-if __name__ == "__main__":
-    main()
+main()
